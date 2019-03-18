@@ -7,6 +7,7 @@ import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Debug;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -14,10 +15,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +31,7 @@ import me.iantje.gamebacklog.adapter.BacklogAdapter;
 import me.iantje.gamebacklog.model.BacklogItem;
 import me.iantje.gamebacklog.viewmodel.MainViewModel;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements RecyclerView.OnItemTouchListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -39,6 +44,11 @@ public class MainActivity extends AppCompatActivity {
     private BacklogAdapter backlogAdapter;
 
     private RecyclerView backlogRecycler;
+
+    private GestureDetector gestureDetector;
+
+    private ItemTouchHelper.SimpleCallback itemTouchHelperCallback;
+    private ItemTouchHelper itemTouchHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +79,34 @@ public class MainActivity extends AppCompatActivity {
         backlogRecycler.setAdapter(backlogAdapter);
         backlogRecycler.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL,
                 false));
+
+        backlogRecycler.addOnItemTouchListener(this);
+
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapUp(MotionEvent e) {
+                return true;
+            }
+        });
+
+        itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(0,
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder,
+                    @NonNull RecyclerView.ViewHolder viewHolder1) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+                int adapterPosition = viewHolder.getAdapterPosition();
+
+                mainViewModel.delete(allItems.get(adapterPosition));
+            }
+        };
+
+        itemTouchHelper = new ItemTouchHelper(itemTouchHelperCallback);
+        itemTouchHelper.attachToRecyclerView(backlogRecycler);
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -123,5 +161,30 @@ public class MainActivity extends AppCompatActivity {
 
     private void deleteAll() {
         mainViewModel.delete(allItems);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(@NonNull RecyclerView recyclerView, @NonNull MotionEvent motionEvent) {
+        View child = recyclerView.findChildViewUnder(motionEvent.getX(), motionEvent.getY());
+        int itemLocation = recyclerView.getChildAdapterPosition(child);
+
+        if(child != null && gestureDetector.onTouchEvent(motionEvent)) {
+            BacklogItem item = allItems.get(itemLocation);
+
+            // Go to edit activity, but for now
+            Toast.makeText(this, item.getTitle(), Toast.LENGTH_LONG).show();
+        }
+
+        return false;
+    }
+
+    @Override
+    public void onTouchEvent(@NonNull RecyclerView recyclerView, @NonNull MotionEvent motionEvent) {
+
+    }
+
+    @Override
+    public void onRequestDisallowInterceptTouchEvent(boolean b) {
+
     }
 }
