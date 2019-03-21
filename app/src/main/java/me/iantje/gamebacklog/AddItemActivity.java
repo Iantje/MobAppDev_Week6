@@ -1,5 +1,6 @@
 package me.iantje.gamebacklog;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -29,6 +31,7 @@ public class AddItemActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_item_activity);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         titleInput = findViewById(R.id.gameTitle);
         platformInput = findViewById(R.id.gamePlatform);
@@ -52,6 +55,14 @@ public class AddItemActivity extends AppCompatActivity {
                 finish();
             }
         });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        setResult(Activity.RESULT_CANCELED, null);
+        finish();
+
+        return true;
     }
 
 }

@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements RecyclerView.OnIt
     private static final String TAG = MainActivity.class.getSimpleName();
 
     public static final int ADD_REQUESTCODE = 1337;
+    public static final int UPDATE_REQUESTCODE = 26;
     public static final String EXTRA_BACKLOG_ITEM = "Backlog_object";
 
     private MainViewModel mainViewModel;
@@ -101,6 +102,17 @@ public class MainActivity extends AppCompatActivity implements RecyclerView.OnIt
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
                 int adapterPosition = viewHolder.getAdapterPosition();
 
+                final BacklogItem item = allItems.get(adapterPosition);
+                Snackbar.make(MainActivity.this.findViewById(android.R.id.content),
+                        getString(R.string.deleted) + " " + item.getTitle(),
+                        Snackbar.LENGTH_LONG).setAction(R.string.undo,
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                mainViewModel.insert(item);
+                            }
+                        }).show();
+
                 mainViewModel.delete(allItems.get(adapterPosition));
             }
         };
@@ -145,11 +157,16 @@ public class MainActivity extends AppCompatActivity implements RecyclerView.OnIt
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if(resultCode == RESULT_OK) {
-            if(requestCode == ADD_REQUESTCODE) {
+            if(data != null) {
                 BacklogItem item = data.getParcelableExtra(EXTRA_BACKLOG_ITEM);
+                if(item == null) {
+                    return;
+                }
 
-                if(item != null) {
+                if(requestCode == ADD_REQUESTCODE) {
                     mainViewModel.insert(item);
+                } else if (requestCode ==  UPDATE_REQUESTCODE) {
+                    mainViewModel.update(item);
                 }
             }
         }
@@ -160,6 +177,17 @@ public class MainActivity extends AppCompatActivity implements RecyclerView.OnIt
     }
 
     private void deleteAll() {
+        final List<BacklogItem> deletedItems = allItems;
+
+        Snackbar.make(MainActivity.this.findViewById(android.R.id.content), R.string.all_deleted,
+                Snackbar.LENGTH_LONG).setAction(R.string.undo,
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        mainViewModel.insert(deletedItems);
+                    }
+                }).show();
+
         mainViewModel.delete(allItems);
     }
 
@@ -171,8 +199,10 @@ public class MainActivity extends AppCompatActivity implements RecyclerView.OnIt
         if(child != null && gestureDetector.onTouchEvent(motionEvent)) {
             BacklogItem item = allItems.get(itemLocation);
 
-            // Go to edit activity, but for now
-            Toast.makeText(this, item.getTitle(), Toast.LENGTH_LONG).show();
+            // Go to edit activity
+            Intent intent = new Intent(MainActivity.this, UpdateActivity.class);
+            intent.putExtra(EXTRA_BACKLOG_ITEM, item);
+            startActivityForResult(intent, UPDATE_REQUESTCODE);
         }
 
         return false;
